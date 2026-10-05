@@ -24,7 +24,11 @@ import (
 	"time"
 )
 
-const defaultMaxUploadMB int64 = 1024
+const (
+	defaultMaxUploadMB int64 = 1024
+	directoryMode            = 0o770
+	fileMode                 = 0o660
+)
 
 //go:embed web/*
 var webFiles embed.FS
@@ -62,7 +66,7 @@ func main() {
 	if maxUploadMB < 1 {
 		log.Fatal("MAX_UPLOAD_MB must be greater than zero")
 	}
-	if err := os.MkdirAll(dataDir, 0o750); err != nil {
+	if err := os.MkdirAll(dataDir, directoryMode); err != nil {
 		log.Fatalf("create data directory: %v", err)
 	}
 
@@ -311,7 +315,7 @@ func (a *app) storePart(part *multipart.Part, requestedPath string, remaining in
 	if relativePath == "" {
 		return uploadResult{}, errInvalidName
 	}
-	tmp, err := os.CreateTemp(a.dataDir, ".dumpster-upload-*")
+	tmp, err := createSharedTemp(a.dataDir, ".dumpster-upload-*")
 	if err != nil {
 		return uploadResult{}, fmt.Errorf("create temporary file: %w", err)
 	}
@@ -332,7 +336,7 @@ func (a *app) storePart(part *multipart.Part, requestedPath string, remaining in
 	a.uploadMu.Lock()
 	defer a.uploadMu.Unlock()
 	directory := filepath.Join(a.dataDir, filepath.Dir(filepath.FromSlash(relativePath)))
-	if err := os.MkdirAll(directory, 0o750); err != nil {
+	if err := os.MkdirAll(directory, directoryMode); err != nil {
 		return uploadResult{}, fmt.Errorf("create destination directory: %w", err)
 	}
 	finalName, err := availableName(directory, path.Base(relativePath))
@@ -413,6 +417,19 @@ func availableName(dir, name string) (string, error) {
 		}
 	}
 	return "", errors.New("too many files with the same name")
+}
+
+func createSharedTemp(dir, pattern string) (*os.File, error) {
+	file, err := os.CreateTemp(dir, pattern)
+	if err != nil {
+		return nil, err
+	}
+	if err := file.Chmod(fileMode); err != nil {
+		file.Close()
+		os.Remove(file.Name())
+		return nil, err
+	}
+	return file, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

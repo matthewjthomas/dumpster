@@ -92,6 +92,8 @@ Dumpster does not require privileged mode, host networking, extra capabilities, 
 5. Add these **Variables**:
    - `TS_AUTHKEY` — a Tailscale auth key from <https://login.tailscale.com/admin/settings/keys>
    - `TS_HOSTNAME` — `dumpster`, or another desired tailnet hostname
+   - `PUID` — `99`, the Unraid `nobody` user
+   - `PGID` — `100`, the Unraid `users` group
    - `MAX_UPLOAD_MB` — maximum size of one file; `1024` by default or `102400` for 100 GiB
    - `ALLOWED_USERS` — optional comma-separated Tailscale login emails; leave empty for all tailnet members
 6. Do not add a host port mapping. Normal access goes through Tailscale Serve, and direct requests to port 8080 are rejected.
@@ -110,6 +112,8 @@ Dumpster does not require privileged mode, host networking, extra capabilities, 
 Open the reported `https://dumpster.<tailnet>.ts.net` address. Once Tailscale has registered successfully, its identity is retained in `/mnt/user/appdata/dumpster/tailscale`; the auth key can then be removed if desired.
 
 To update Dumpster later, select **Check for Updates** in Unraid's Docker page and apply the available image update. The two mapped folders preserve uploaded files, incomplete resumable uploads, and Tailscale identity across upgrades.
+
+Tailscale continues to run as root inside the container, but the Dumpster web application runs as `PUID:PGID`. On the first start—or whenever those IDs change—the entrypoint updates `/data` to use that ownership, `0770` directory permissions, and `0660` file permissions. A `.dumpster-permissions` marker prevents repeating the recursive migration on every restart.
 
 ## Resumable uploads
 
@@ -152,6 +156,8 @@ Endpoints:
 - `TS_AUTHKEY` — Tailscale auth key used to join the tailnet
 - `TS_HOSTNAME` — Tailscale machine name; defaults to `dumpster`
 - `DUMPSTER_STORAGE` — host-side storage path in Compose; defaults to `./storage`
+- `PUID` — numeric user ID used by the web application and uploaded files; defaults to `99`
+- `PGID` — numeric group ID used by the web application and uploaded files; defaults to `100`
 - `MAX_UPLOAD_MB` — maximum size of one file; defaults to `1024`
 - `ALLOWED_USERS` — optional comma-separated Tailscale login emails; empty allows all tailnet members
 - `AUTH_BYPASS` — disables authentication when true; development only

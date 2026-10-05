@@ -146,6 +146,22 @@ func TestDuplicateNamesArePreserved(t *testing.T) {
 	assertFileContents(t, filepath.Join(a.dataDir, "report (1).pdf"), "second")
 }
 
+func TestUploadedFilesUseSharedPermissions(t *testing.T) {
+	a := testApp(t)
+	response := httptest.NewRecorder()
+	a.routes().ServeHTTP(response, multipartRequest(t, map[string]string{"shared.txt": "contents"}))
+	if response.Code != http.StatusCreated {
+		t.Fatalf("upload status = %d, body = %s", response.Code, response.Body.String())
+	}
+	info, err := os.Stat(filepath.Join(a.dataDir, "shared.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != fileMode {
+		t.Fatalf("file permissions = %04o, want %04o", info.Mode().Perm(), fileMode)
+	}
+}
+
 func TestUploadLimitRollsBackRequest(t *testing.T) {
 	a := testApp(t)
 	a.maxUpload = 5

@@ -79,6 +79,18 @@ func TestCancelResumableUploadDeletesPartialData(t *testing.T) {
 	}
 }
 
+func TestPartialUploadsUseSharedPermissions(t *testing.T) {
+	a := testApp(t)
+	upload := createResumable(t, a.routes(), "shared-part.bin", 10)
+	info, err := os.Stat(a.uploadPartPath(upload.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != fileMode {
+		t.Fatalf("partial file permissions = %04o, want %04o", info.Mode().Perm(), fileMode)
+	}
+}
+
 func TestInterruptedChunkReportsStoredOffset(t *testing.T) {
 	a := testApp(t)
 	handler := a.routes()

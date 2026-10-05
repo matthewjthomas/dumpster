@@ -55,7 +55,7 @@ func (a *app) createUpload(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "The file exceeds the configured size limit."})
 		return
 	}
-	if err := os.MkdirAll(a.resumableDir(), 0o750); err != nil {
+	if err := os.MkdirAll(a.resumableDir(), directoryMode); err != nil {
 		a.serverError(w, "create resumable upload directory", err)
 		return
 	}
@@ -74,9 +74,15 @@ func (a *app) createUpload(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	part, err := os.OpenFile(a.uploadPartPath(id), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o640)
+	part, err := os.OpenFile(a.uploadPartPath(id), os.O_WRONLY|os.O_CREATE|os.O_EXCL, fileMode)
 	if err != nil {
 		a.serverError(w, "create partial upload", err)
+		return
+	}
+	if err := part.Chmod(fileMode); err != nil {
+		part.Close()
+		os.Remove(a.uploadPartPath(id))
+		a.serverError(w, "set partial upload permissions", err)
 		return
 	}
 	if err := part.Close(); err != nil {
@@ -172,7 +178,7 @@ func (a *app) appendUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	part, err := os.OpenFile(a.uploadPartPath(id), os.O_WRONLY, 0o640)
+	part, err := os.OpenFile(a.uploadPartPath(id), os.O_WRONLY, fileMode)
 	if err != nil {
 		a.serverError(w, "open partial upload", err)
 		return
@@ -268,7 +274,7 @@ func (a *app) completeUpload(upload resumableUpload) (uploadResult, error) {
 	defer a.uploadMu.Unlock()
 
 	directory := filepath.Join(a.dataDir, filepath.Dir(filepath.FromSlash(upload.Path)))
-	if err := os.MkdirAll(directory, 0o750); err != nil {
+	if err := os.MkdirAll(directory, directoryMode); err != nil {
 		return uploadResult{}, fmt.Errorf("create destination directory: %w", err)
 	}
 	finalName, err := availableName(directory, path.Base(upload.Path))
@@ -314,7 +320,7 @@ func (a *app) saveUpload(upload resumableUpload) error {
 	if err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(a.resumableDir(), ".metadata-*")
+	tmp, err := createSharedTemp(a.resumableDir(), ".metadata-*")
 	if err != nil {
 		return err
 	}

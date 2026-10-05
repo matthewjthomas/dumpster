@@ -7,6 +7,8 @@ services:
       TS_AUTHKEY: ${TS_AUTHKEY:-}
       TS_HOSTNAME: ${TS_HOSTNAME:-dumpster}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-1024}
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
       # Optional comma-separated Tailscale logins. Empty allows every tailnet member.
       ALLOWED_USERS: ${ALLOWED_USERS:-}
       # Development only: uncomment this and the port mapping to bypass Tailscale.
