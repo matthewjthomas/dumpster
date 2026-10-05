@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Dumpster</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <span>Dumpster</span>
+    </a>
+    <div id="identity" class="identity">Connected through Tailscale</div>
+  </header>
+
+  <main>
+    <section id="dropZone" class="drop-zone" aria-label="File upload">
+      <input id="fileInput" type="file" name="files" multiple hidden>
+      <input id="folderInput" type="file" name="files" webkitdirectory directory multiple hidden>
+      <div class="drop-icon" aria-hidden="true">↓</div>
+      <h2>Drop files here</h2>
+      <div class="picker-actions">
+        <button id="chooseFiles" class="picker-button" type="button">Choose files</button>
+        <button id="chooseFolder" class="picker-button" type="button">Choose a folder</button>
+      </div>
+      <label class="concurrency-control" for="concurrentUploads">
+        Parallel uploads
+        <input id="concurrentUploads" type="number" min="1" max="32" step="1" value="4" inputmode="numeric">
+      </label>
+    </section>
+
+    <section id="queue" class="queue" aria-label="Uploads" aria-live="polite"></section>
+
+    <section class="files-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CONTENTS</p>
+          <h2>In the dumpster</h2>
+        </div>
+        <button id="refreshButton" class="quiet-button" type="button">Refresh</button>
+      </div>
+      <div id="emptyState" class="empty-state" hidden>The dumpster is empty.</div>
+      <div id="fileList" class="file-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="tailscaleStatus" class="tailscale-badge disconnected"><i></i> Tailscale Status: Disconnected</span>
+  </footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>

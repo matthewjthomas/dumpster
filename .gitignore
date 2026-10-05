@@ -1,0 +1,4 @@
+.env
+/storage/
+/tailscale-state/
+/dumpster
